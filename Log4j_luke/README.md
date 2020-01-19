@@ -193,7 +193,7 @@ loggers标签
 
 ### slf4j
 
-### slf4j简介
+**slf4j**简介
 
  
 
@@ -205,7 +205,184 @@ loggers标签
 
 **将log4j改成slf4j**
 
+需用使用连接包
+
+注意在导入时不能同时导入log4j-slf4j-impl-2.9.1.jar和log4j-to-slf4j-2.9.1.jar
+
+```java
+package it.luke.slf4j;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+public class log4j_to_slf4j {
+
+    public static void main(String[] args) {
+
+        //创建记录日志的对象
+        Logger log = LoggerFactory.getLogger(log4j_to_slf4j.class);
+
+        log.debug("debug信息");
+        log.info("info信息");
+        log.warn("warn信息");
+        log.error("error信息");
+
+    }
+
+}
+
+```
+
+
+
+
+
 
 
 ### logback
+
+​		logback是log4j作者的开发的又一个记录日志的开源技术，相比于log4j而言，logback在很多方面都有很大的提升。
+
+​		logback分为三个模块：logback-core, logback-classic和logback-access。其中 logback-core是另外两个的基础模块，logback-classic是log4j的升级版本，同时也实现了SLF4j的API，因此可以方便的使用SLF4j，还有一点要说的就是SLF4j和logback的作者是同一个人，所以说logback是原生的实现了SLF4j。logback-access集成了一些servlet容器，比如tomcat
+
+
+
+```xml
+<?xml version="1.0" encoding="UTF-8" ?>
+
+<configuration scan="true" scanPeriod="3 seconds" DEBUG="true">
+
+    <statusListener class="ch.qos.logback.core.status.OnConsoleStatusListener" />
+
+    <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder>
+            <pattern>%d{HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n
+            </pattern>
+        </encoder>
+    </appender>
+
+
+    <appender name="FILE" class="ch.qos.logback.core.FileAppender">
+        <file>file.log</file>
+        <append>true</append>
+        <encoder>
+            <pattern>%-4relative [%thread] %-5level %logger{35} - %msg%n
+            </pattern>
+        </encoder>
+    </appender>
+
+    <appender name="ROLLINGFILE"
+        class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <file>mylog.txt</file>
+        <rollingPolicy
+            class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">
+            <!-- rollover daily -->
+            <fileNamePattern>mylog-%d{yyyy-MM-dd}.%i.log.zip</fileNamePattern>
+            <!-- 每个日志文件大小不超过100MB，在日志文件总大小不超过20GB的情况下保存60天， -->
+            <maxFileSize>100MB</maxFileSize>
+            <maxHistory>60</maxHistory>
+            <totalSizeCap>20GB</totalSizeCap>
+        </rollingPolicy>
+        <encoder>
+            <pattern>%d{HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n
+            </pattern>
+        </encoder>
+    </appender>
+
+    <root level="INFO">
+        <appender-ref ref="STDOUT" />
+    </root>
+
+</configuration>
+```
+
+**日志输出控制文件分析**
+
+ 
+
+**configuration** 
+ scan=”true”表示logback会自动加载修改后的xml配置文件，默认情况下，每隔一分钟扫描一次，可以通过scanPeriod=”3 seconds”设置为每3秒扫描一次。
+ DEBUG=”true”该配置并不是设置日志级别为debug，而是会打印logback内部运行的一些信息，可以查看logback的运行状态，默认是false。
+
+**statusListener**
+ 可以通过设置监听器来监听logback内部运行的信息和状态。
+
+**appender**
+ 可以编写多个appender来实现不同的日志输出方式。
+
+其中name属性用于指定appender的名称，即给appender命名
+ class属性用于指定日志的输出方式。
+
+ 
+
+- ch.qos.logback.core.ConsoleAppender：将日志信息输出到控制台
+- ch.qos.logback.core.FileAppender：日志输出到文件
+- ch.qos.logback.core.rolling.RollingFileAppender：当日志文件大小到达指定尺寸的时候将产生一个新的日志文件。
+
+**encoder**
+ 在logback0.9.19版本中引入了encoder来替代layout。该标签默认使用PatternLayoutEncoder，其中pattern标签可以设置日志的输出格式
+
+**file**
+ 该标签在appender标签下，用于指定输出日志的文件名
+
+**append**
+ 该标签在appender标签下，是否以追加的方式写出到日志文件中。
+
+**rollingPolicy**
+ 该标签在appender标签下，用来指定产生新文件的方式。
+ 常用的有SizeAndTimeBasedRollingPolicy（根据日期和文件大小产生新的文件）和FixedWindowRollingPolicy（根据文件大小产生新的文件）
+
+**maxFileSize**
+ 该标签在rollingPolicy下，当文件大小超过该标签中指定的大小时会创建新的文件，例如：5kb，5MB，5GB，默认单位是字节b，如果只写500的话，则表示500b
+
+ 
+
+**maxHistory**
+ 该标签在rollingPolicy下，用来指定日志保存的天数。
+
+ 
+
+**totalSizeCap**
+ 该标签在rollingPolicy下，保存日志的总大小，通常写在maxHistory的后面。
+
+**level**
+ 该标签在root下，用来表示日志的打印级别
+
+**appender-ref**
+ 该标签在root下，用来添加appender。
+
+3.编写日志记录代码
+因为logback原生就实现了SLF4j的API，所以这里使用SLF4j。
+
+```java
+package it.luke.logback;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import ch.qos.logback.classic.LoggerContext;
+import ch.qos.logback.core.status.OnConsoleStatusListener;
+import ch.qos.logback.core.status.StatusManager;
+
+public class logback_test {
+
+    public static void main(String[] args) {
+
+        // 创建记录日志的对象
+        Logger log = LoggerFactory.getLogger(logback_test.class);
+
+        log.debug("debug信息");
+        log.info("info信息");
+        log.warn("warn信息");
+        log.error("error信息");
+
+    }
+
+}
+
+```
+
+
+
+
 
